@@ -10,7 +10,7 @@ class LocationsMap extends Component {
     infoWindows : [],
     data :[],
     requestIsSuccessful : true,
-    isMapLoaded : true,
+    isMapLoaded : "pre",
     map:{},
     locations:[]
   }
@@ -19,75 +19,84 @@ class LocationsMap extends Component {
     this.setState({data:d})
   }
 
+//call Wikipedia API to be populate the infoWindows
   componentDidMount = () => {
     this.props.locations.map((location,index)=>{
       return fetchJsonp(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${location.title}&format=json&callback=wikiCallback`)
       .then(response => response.json()).then((responseJson) => {
         let newData = [...this.state.data,[responseJson,responseJson[2][0],responseJson[3][0]]]
         this.getData(newData)
-      }).catch(error =>
-        console.error("error loading wikipedia API" + error)
+      }).catch(error => //alert the user if the API call failed
+        alert("Error: could not load info for "+location.title+" from wikipedia API \nDetails: " + error)
       )
     })
   }
 
-
-  componentWillReceiveProps ({ isScriptLoadSucceed  }) { //loading the map
-    if (isScriptLoadSucceed ) {
+//loading the map with the starting location
+  componentWillReceiveProps ({ isScriptLoadSucceed  }) {
+    if (this.state.isMapLoaded === "pre"){
+      if (isScriptLoadSucceed ) {
         var map = new window.google.maps.Map(document.getElementById('map'), {
-          zoom: 5,
-          center: new window.google.maps.LatLng(23.885942,45.079162),
+          zoom: 6,
+          center: new window.google.maps.LatLng(23.885942,45.079162), //location: Saudi Arabia
           styles: mapStyle
         });
-        this.setState({map:map});
+        this.setState({map:map , isMapLoaded:"yes"});
       }
       else {
-        console.log("Error: Google map could not be loaded");
-        this.setState({isMapLoaded: false})
+        alert("Error: Google map could not be loaded. Please try again.");
+        this.setState({isMapLoaded: "no"})
       }
-
-  }
-
-  componentDidUpdate = (prevProps, prevState) => {
-    this.updateMarkers(this.props.locations);
-    if(this.props.selectedLocation !== ''){
-      console.log("location: " + this.props.selectedLocation.title);
-      this.clickMarker(this.state.markers[this.props.selectedLocation.id-1]);
-    }else {
-      this.hideInfoWindows();
     }
   }
 
-
-  updateMarkers = (locations) =>{
-    this.hideMarkers();
-    let self = this;
-    var marker;
-    var pos;
-    let bounds = new window.google.maps.LatLngBounds();
-    locations.forEach((loc) => {
-      pos = new window.google.maps.LatLng(loc.location.lat, loc.location.lng);
-      marker = new window.google.maps.Marker({
-        id:loc.id,
-        title: loc.title,
-        position: pos,
-        animation: window.google.maps.Animation.DROP,
-        map: this.state.map
-      })
-      bounds.extend(marker.position);
-      marker.addListener('click', function(){
-          self.clickMarker(this);
-          self.updateInfoWindow(this);
-        });
-        this.state.markers.push(marker);
-    });
-
-    this.state.map.fitBounds(bounds);
-
+//update markers and trigger the infoWindow for the selected markers
+  componentDidUpdate = (prevProps, prevState) => {
+    if(this.state.isMapLoaded !== "no"){
+      let self = this;
+      if (this.props.input == prevProps.input){
+      this.updateMarkers(this.props.locations);
+        if(this.props.selectedLocation !== ''){
+          self.clickMarker(self.state.markers[self.props.selectedLocation.id-1]);
+        }else {
+          this.hideInfoWindows();
+        }
+      }
+    }
   }
 
+//update the markers on the map based on the locations
+  updateMarkers = (locations) =>{
+    if (this.state.isMapLoaded!== "no"){
+      this.hideMarkers();
+      let self = this;
+      var marker;
+      var pos;
+      let bounds = new window.google.maps.LatLngBounds();
+      locations.forEach((loc) => {
+        pos = new window.google.maps.LatLng(loc.location.lat, loc.location.lng);
+        marker = new window.google.maps.Marker({
+          id:loc.id,
+          title: loc.title,
+          position: pos,
+          animation: window.google.maps.Animation.DROP,
+          map: this.state.map
+        })
+        bounds.extend(marker.position);
+        marker.addListener('click', function(){
+            self.clickMarker(this);
+            self.updateInfoWindow(this);
+          });
+          this.state.markers.push(marker);
+        });
+
+        this.state.map.fitBounds(bounds);
+      }
+  }
+
+//populating infowindows with the data retreived from Wikipedia
   updateInfoWindow = (marker) => {
-    let  infowindow = new window.google.maps.InfoWindow({ maxWidth: 200 });
+    let infowindow = new window.google.maps.InfoWindow({ maxWidth: 200 });
     if(marker)
     if(infowindow.marker !== marker) {
       infowindow.marker = marker;
@@ -124,25 +133,23 @@ class LocationsMap extends Component {
       this.state.infoWindows.push(infowindow);
   }
 
+//when a marker is clicked animate it and show its infowindow
   clickMarker = (clickedMarker) =>{
     this.hideInfoWindows();
-    if(clickedMarker){
-      if (clickedMarker.getAnimation() !== null) {
-        clickedMarker.setAnimation(null);
-      } else {
-        clickedMarker.setAnimation(window.google.maps.Animation.BOUNCE);
-        setTimeout(function(){
-          clickedMarker.setAnimation(null);
-        }, 500);
-      }
-    }
+    clickedMarker.setAnimation(window.google.maps.Animation.BOUNCE);
+    setTimeout(function(){
+      clickedMarker.setAnimation(null);
+    }, 200);
     this.updateInfoWindow(clickedMarker);
+    console.log(" in ");
   }
 
+//hide all markers
   hideMarkers = () => {
     this.state.markers.forEach((marker) => {marker.setMap(null)});
   }
 
+//hide all infowindows
   hideInfoWindows = () => {
     this.state.infoWindows.forEach((win) => {win.close()});
   }
@@ -151,11 +158,11 @@ class LocationsMap extends Component {
 
     return (
       this.state.isMapLoaded ? (
-        <div id="map" role="application"> map test
+        <div id="map" role="application"> "loading the map ..."
         </div>
       ) : (
         <div id="map" role="application">
-          <p> Map could not be loaded, please try again. </p>
+          <p> "Error: Map could not be loaded, please try again." </p>
         </div>
       )
     );

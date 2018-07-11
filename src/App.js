@@ -1,12 +1,9 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
-import scriptLoader from 'react-async-script-loader';
 import escapeRegExp from 'escape-string-regexp';
 import LocationsList from './LocationsList';
 import LocationsMap from './LocationsMap';
-import fetchJsonp from 'fetch-jsonp';
-
 
 class App extends Component {
   state ={
@@ -22,15 +19,18 @@ class App extends Component {
     requestIsSuccessful: true
   }
 
+  //update the query based on the user input and deselect any locations
   updateQuery = (q) => {
     this.setState({ query: q, selectLocation: ''})
   }
 
+  //set selected location based on the user selection
   selectLocation = (loc) => {
-    this.setState({selectedLocation : this.state.locations[loc-1], query:''})
+    this.setState({selectedLocation : this.state.locations[loc-1]})
   }
 
   render() {
+    //filter the showing location based on the user input
     let showingLocations
     if(this.state.query){
       const match = new RegExp(escapeRegExp(this.state.query),'i')
@@ -38,12 +38,13 @@ class App extends Component {
     } else {
       showingLocations = this.state.locations
     }
+
     return (
       <div className="App">
         <div className="content container">
           <header className="App-header container">
             <img src={logo} className="App-logo" alt="logo" />
-            <h1 className="App-title">SAUDI ARABIA HISTORICAL SITES</h1>
+            <h1 tbaindex="0" className="App-title">SAUDI ARABIA HISTORICAL SITES</h1>
             </header>
             <div className = "list-container container">
             <input

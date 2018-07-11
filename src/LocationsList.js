@@ -12,15 +12,14 @@ class LocationsList extends Component {
     return (
       <div className ="LocationsList">
         <ul
-          role="List of historical locations"
+          label="List of historical locations"
           className="list container"
-          aria-labelledby="Locations list"
           tabIndex="1">
           {this.props.locations.map((location) =>
-            <li
+            <li 
               key={location.id}
               data-id={location.id}
-              role="place"
+              label="Historical locations"
               className="location"
               tabIndex={location.id+2}
               area-labelledby={`View ${location.title} details`}
